@@ -1,11 +1,11 @@
 import os
 from flask import Flask, flash, request, redirect, url_for, jsonify
-#from werkzeug.utils import secure_filename
+from werkzeug.utils import secure_filename
 import cv2
-#import keras
+
 import numpy as np
-#from keras.models import load_model
-#from keras import backend as K
+import runmodel
+
 
 UPLOAD_FOLDER = './uploads/'
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
@@ -33,13 +33,18 @@ def upload_file():
 		if file and allowed_file(file.filename):
 			filename = secure_filename(file.filename)
 			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            
 			image = cv2.imread(os.path.dirname(os.path.realpath(__file__))+"/uploads/"+filename)
-			color_result = getDominantColor(image)
-			result = catOrDog(image)
+            label = cv2.imread(os.path.dirname(os.path.realpath(__file__))+"/uploads/"+filename)
+			#color_result = getDominantColor(image)
+			#result = catOrDog(image)
+            finalimg,finallabel,finaloutput = segemntation(image,label)
+            
 			redirect(url_for('upload_file',filename=filename))
 			return '''
 			<!doctype html>
 			<title>Results</title>
+            <img src="url">
 			<h1>Image contains a - '''+result+'''</h1>
 			<h2>Dominant color is - '''+color_result+'''</h2>
 			<form method=post enctype=multipart/form-data>
@@ -47,38 +52,52 @@ def upload_file():
 			  <input type=submit value=Upload>
 			</form>
 			'''
-	return '''
+	return 
+'''
 	<!doctype html>
-	<title>Upload new File</title>
 	<h1>Upload new File</h1>
 	<form method=post enctype=multipart/form-data>
-	  <input type=file name=file>
-	  <input type=submit value=Upload>
+	  image
+      <input type=file name=file> <br>
+      
+      label
+      <input type=file name=file>
+      
+	  <input type=submit value=Uploadkarnalaude>
 	</form>
 	'''
+def segmentation(image, label):
+        inputs = Variable(torch.from_numpy(image.reshape(1,1,128,128))) #.cuda()
+        inputs = inputs.float()
+        out = model.forward(inputs)
+        out = np.argmax(out.data.cpu().numpy(), axis=1).reshape(128,128)
+        
+        k.clear_session()
+        
+        return image ,label, out
 
-def catOrDog(image):
-	'''Determines if the image contains a cat or dog'''
-	classifier = load_model('./models/cats_vs_dogs_V1.h5')
-	image = cv2.resize(image, (150,150), interpolation = cv2.INTER_AREA)
-	image = image.reshape(1,150,150,3) 
-	res = str(classifier.predict_classes(image, 1, verbose = 0)[0][0])
-	print(res)
-	print(type(res))
-	if res == "0":
-		res = "Cat"
-	else:
-		res = "Dog"
-	K.clear_session()
-	return res
+# def catOrDog(image):
+# 	'''Determines if the image contains a cat or dog'''
+# 	classifier = load_model('./models/cats_vs_dogs_V1.h5')
+# 	image = cv2.resize(image, (150,150), interpolation = cv2.INTER_AREA)
+# 	image = image.reshape(1,150,150,3) 
+# 	res = str(classifier.predict_classes(image, 1, verbose = 0)[0][0])
+# 	print(res)
+# 	print(type(res))
+# 	if res == "0":
+# 		res = "Cat"
+# 	else:
+# 		res = "Dog"
+# 	 K.clear_session()
+# 	return res
 
-def getDominantColor(image):
-	'''returns the dominate color among Blue, Green and Reds in the image '''
-	B, G, R = cv2.split(image)
-	B, G, R = np.sum(B), np.sum(G), np.sum(R)
-	color_sums = [B,G,R]
-	color_values = {"0": "Blue", "1":"Green", "2": "Red"}
-	return color_values[str(np.argmax(color_sums))]
+# def getDominantColor(image):
+# 	'''returns the dominate color among Blue, Green and Reds in the image '''
+# 	B, G, R = cv2.split(image)
+# 	B, G, R = np.sum(B), np.sum(G), np.sum(R)
+# 	color_sums = [B,G,R]
+# 	color_values = {"0": "Blue", "1":"Green", "2": "Red"}
+# 	return color_values[str(np.argmax(color_sums))]
 	
 if __name__ == "__main__":
 	app.run(host= '0.0.0.0', port=80)
