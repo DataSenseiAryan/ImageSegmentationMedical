@@ -2,18 +2,24 @@ import os
 from flask import Flask, flash, request, redirect, url_for, jsonify
 from werkzeug.utils import secure_filename
 import cv2
-
+from PIL import Image
+from skimage.io import imsave
+            
 import numpy as np
 import runmodel
 
 
-UPLOAD_FOLDER = './uploads/'
+IMAGE = './image'
+LABEL = './label'
+OUTPUT = './output'
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 DEBUG = True
 app = Flask(__name__)
 app.config.from_object(__name__)
 app.config['SECRET_KEY'] = '7d441f27d441f27567d441f2b6176a'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['IMAGE'] = IMAGE
+app.config['LABEL'] = LABEL
+app.config['OUTPUT'] = OUTPUT
 
 def allowed_file(filename):
 	return '.' in filename and \
@@ -32,21 +38,21 @@ def upload_file():
 			return redirect(request.url)
 		if file and allowed_file(file.filename):
 			filename = secure_filename(file.filename)
-			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+			file.save(os.path.join(app.config['IAMGE'], filename))
+			file.save(os.path.join(app.config['LABEL'], filename))
+			image = cv2.imread(os.path.dirname(os.path.realpath(__file__))+"/image/"+filename)
+			label = cv2.imread(os.path.dirname(os.path.realpath(__file__))+"/label/"+filename)
+			out = segemntation(image,label)
+			filename = 'file.png'
+			imsave('./output/ + f{filename} +.png',out)
             
-			image = cv2.imread(os.path.dirname(os.path.realpath(__file__))+"/uploads/"+filename)
-            label = cv2.imread(os.path.dirname(os.path.realpath(__file__))+"/uploads/"+filename)
-			#color_result = getDominantColor(image)
-			#result = catOrDog(image)
-            finalimg,finallabel,finaloutput = segemntation(image,label)
             
-			redirect(url_for('upload_file',filename=filename))
 			return '''
 			<!doctype html>
 			<title>Results</title>
-            <img src="url">
-			<h1>Image contains a - '''+result+'''</h1>
-			<h2>Dominant color is - '''+color_result+'''</h2>
+            
+			<h1>Image contains a - ''''''</h1>
+			
 			<form method=post enctype=multipart/form-data>
 			  <input type=file name=file>
 			  <input type=submit value=Upload>
@@ -72,10 +78,26 @@ def segmentation(image, label):
         out = model.forward(inputs)
         out = np.argmax(out.data.cpu().numpy(), axis=1).reshape(128,128)
         
-        k.clear_session()
-        
-        return image ,label, out
+         
+        #arr = np.array(raw_data)
 
+    # convert numpy array to PIL Image
+        #img = Image.fromarray(out.astype('uint8'))
+
+    # create file-object in memory
+        #file_object = io.BytesIO()
+
+    # write PNG in file-object
+        
+        #img.save(file_object, 'PNG')
+
+    # move to beginning of file so `send_file()` it will read from start    
+        #file_object.seek(0)
+
+     
+        #send_file(file_object, mimetype='image/PNG')
+
+        return out
 # def catOrDog(image):
 # 	'''Determines if the image contains a cat or dog'''
 # 	classifier = load_model('./models/cats_vs_dogs_V1.h5')

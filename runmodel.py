@@ -2,7 +2,7 @@
 
 import numpy as np
 import time
-import progressbar
+#import progressbar
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
@@ -118,9 +118,9 @@ def predict(model , image , label):
         display_image_label_and_output(image, label, out)
 
 
-#img_arr = imageio.imread('/home/ryan/ImageSegmentationMedical/data/test_images/img1.png')
+img_arr = imageio.imread('/home/ryan/ImageSegmentationMedical/data/test_images/img1.png')
 
-#label_arr = imageio.imread('/home/ryan/ImageSegmentationMedical/data/test_images/label1.png')
+label_arr = imageio.imread('/home/ryan/ImageSegmentationMedical/data/test_images/label1.png')
 
 #predict(UNet() , img_arr ,label_arr)
 
